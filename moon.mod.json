@@ -1,10 +1,13 @@
 {
-  "name": "username/hello",
-  "version": "0.1.0",
+  "name": "ZijianFeng33/sudoku", 
+  "version": "0.1.0",           
+  "license": "Apache-2.0",      
+  "description": "A module of sudoku.", 
+  "authors": ["ZijianFeng33 <f2534104638@gmail.com>"], 
+  "homepage": "https://github.com/ZijianFeng33", 
   "readme": "README.md",
-  "repository": "",
-  "license": "Apache-2.0",
-  "keywords": [],
-  "description": "",
-  "source": "src"
+  "scripts": {
+    "build": "moonc build",
+    "test": "moonc test"
+  }
 }

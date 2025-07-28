@@ -1,6 +1,5 @@
 // main.mbt
 // --- 常量和全局数据结构 ---
-
 priv type Grid[T] FixedArray[T]
 
 ///|
@@ -347,26 +346,71 @@ fn search(
 // solve 函数：整合解析和搜索过程
 fn solve(g : String) -> String {
   // 清理输入字符串，只保留数字和点
-  let mut clean_g = ""
+  let clean_g_buf = @buffer.new() // 使用缓冲区进行高效清理
   for char in g {
-      if cols.contains(char.to_string()) || char == '.' || char == '0' {
-          clean_g = clean_g + char.to_string()
-      }
+    // 优化：使用 Char 算术进行数字检查
+    let is_digit = char.to_int() >= '1'.to_int() && char.to_int() <= '9'.to_int()
+    if is_digit || char == '.' || char == '0' {
+      clean_g_buf.write_char(char) // 直接将字符写入缓冲区
+    }
   }
+  let clean_g = clean_g_buf.to_string() // 将缓冲区内容转换为 String
 
   match Grid::parse(clean_g) {
-      None => "Error: Initial grid is invalid or has a contradiction."
-      Some(initial_grid) => {
-          match search(initial_grid) {
-            None => "can't solve this puzzle"
-            Some(v) => v.format()
-          }
+    None => "Error: Initial grid is invalid or has a contradiction."
+    Some(initial_grid) => {
+      match search(initial_grid) {
+        None => "can't solve this puzzle"
+        Some(v) => v.format()
       }
+    }
   }
 }
 
 
 // --- 示例用法 (main 函数用于执行) ---
+// --- 示例用法 (main 函数用于执行) ---
+
+// Test Cases Categories:
+// (a) 简单谜题（空单元格少，快速求解）
+// (b) 中等/困难谜题（空单元格多，需要更多回溯）
+// (c) 无解谜题（初始状态矛盾或无法求解）
+// (d) 已解决的谜题
+// (e) 无效输入字符串（例如，长度不正确、非数字/非点字符）
+
+// (a) 简单谜题
+let easy_grid = "003020600900305001001806400008102900700000008006708200002609500800203009005010300"
+let easy_solution : String =
+    "4 8 3 | 9 2 1 | 6 5 7\n" +
+    "9 6 7 | 3 4 5 | 8 2 1\n" +
+    "2 5 1 | 8 7 6 | 4 9 3\n" +
+    "---------+---------+---------\n" +
+    "5 4 8 | 1 3 2 | 9 7 6\n" +
+    "7 2 9 | 5 8 6 | 4 3 2\n" +
+    "1 3 6 | 7 9 8 | 2 4 5\n" +
+    "---------+---------+---------\n" +
+    "3 7 2 | 6 8 9 | 5 1 4\n" +
+    "8 1 4 | 2 5 3 | 7 6 9\n" +
+    "6 9 5 | 4 1 7 | 3 8 2"
+
+test "Easy Sudoku Puzzle" {
+    let solution = solve(easy_grid)
+    let mut clean_solution = ""
+    for char in solution {
+        if char != ' ' && char != '\n' && char != '|' && char != '-' && char != '+' {
+            clean_solution = clean_solution + char.to_string()
+        }
+    }
+    let mut clean_expected = ""
+    for char in easy_solution {
+        if char != ' ' && char != '\n' && char != '|' && char != '-' && char != '+' {
+            clean_expected = clean_expected + char.to_string()
+        }
+    }
+    inspect(clean_solution, content=clean_expected)
+}
+
+// (b) 中等/困难谜题 (from the original problem, often considered medium/hard)
 let grid1 =
   "4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......"
 
@@ -383,9 +427,7 @@ let expected_solution : String =
     "5 7 3 | 2 9 1 | 6 8 4\n" +
     "1 6 4 | 8 7 5 | 2 9 3"
 
-test {
-  // The format function was slightly adjusted for cleaner output,
-  // so we compare against a similarly formatted string.
+test "Medium/Hard Sudoku Puzzle (Original)" {
   let solution = solve(grid1)
   let mut clean_solution = ""
   for char in solution {
@@ -397,13 +439,113 @@ test {
   for char in expected_solution {
       if char != ' ' && char != '\n' && char != '|' && char != '-' && char != '+' {
           clean_expected = clean_expected + char.to_string()
-      }
+        }
   }
   inspect(clean_solution, content=clean_expected)
 }
 
+// (b) 另一个困难谜题 (from a common list of hard sudokus, e.g., "AI Escargot")
+let hard_grid_known = "8..........36......7..9.2...5...7.......45....7..8...6.3.54...3..8.87....1.4.2"
+let hard_solution_known :String=
+    "8 1 2 | 7 5 3 | 6 4 9\n" +
+    "9 4 3 | 6 8 2 | 1 7 5\n" +
+    "6 7 5 | 4 9 1 | 2 8 3\n" +
+    "---------+---------+---------\n" +
+    "1 5 4 | 2 3 7 | 8 9 6\n" +
+    "3 6 9 | 8 4 5 | 7 2 1\n" +
+    "2 8 7 | 1 6 9 | 5 3 4\n" +
+    "---------+---------+---------\n" +
+    "5 2 1 | 3 7 8 | 4 6 9\n" +
+    "4 3 8 | 9 1 6 | 5 7 2\n" +
+    "7 9 6 | 5 2 4 | 3 1 8"
+
+test "Hard Sudoku Puzzle (Known)" {
+    let solution = solve(hard_grid_known)
+    let mut clean_solution = ""
+    for char in solution {
+        if char != ' ' && char != '\n' && char != '|' && char != '-' && char != '+' {
+            clean_solution = clean_solution + char.to_string()
+        }
+    }
+    let mut clean_expected = ""
+    for char in hard_solution_known {
+        if char != ' ' && char != '\n' && char != '|' && char != '-' && char != '+' {
+            clean_expected = clean_expected + char.to_string()
+        }
+    }
+    inspect(clean_solution, content=clean_expected)
+}
+
+
+// (c) 无解谜题 (contradiction at start)
+let unsolvable_grid_contradiction = "44..............................................................................." // Two 4s in A1 and A2, will lead to early contradiction
+test "Unsolvable Sudoku Puzzle (Initial Contradiction)" {
+    let solution = solve(unsolvable_grid_contradiction)
+    inspect(solution, content="Error: Initial grid is invalid or has a contradiction.")
+}
+
+// (c) 无解谜题 (verified contradiction by filling multiple values in same unit)
+let unsolvable_grid_verified = "123456789123456789123456789123456789123456789123456789123456789123456789123456789" // All rows are 123456789, which is a contradiction.
+test "Unsolvable Sudoku Puzzle (Verified Contradiction)" {
+    let solution = solve(unsolvable_grid_verified)
+    inspect(solution, content="Error: Initial grid is invalid or has a contradiction.")
+}
+
+
+// (d) 已解决的谜题
+let solved_grid =
+    "417369825632158947958724316825437169791586432346912758289643571573291684164875293"
+let solved_solution :String=
+    "4 1 7 | 3 6 9 | 8 2 5\n" +
+    "6 3 2 | 1 5 8 | 9 4 7\n" +
+    "9 5 8 | 7 2 4 | 3 1 6\n" +
+    "---------+---------+---------\n" +
+    "8 2 5 | 4 3 7 | 1 6 9\n" +
+    "7 9 1 | 5 8 6 | 4 3 2\n" +
+    "3 4 6 | 9 1 2 | 7 5 8\n" +
+    "---------+---------+---------\n" +
+    "2 8 9 | 6 4 3 | 5 7 1\n" +
+    "5 7 3 | 2 9 1 | 6 8 4\n" +
+    "1 6 4 | 8 7 5 | 2 9 3"
+
+test "Already Solved Sudoku Puzzle" {
+    let solution = solve(solved_grid)
+    let mut clean_solution = ""
+    for char in solution {
+        if char != ' ' && char != '\n' && char != '|' && char != '-' && char != '+' {
+            clean_solution = clean_solution + char.to_string()
+        }
+    }
+    let mut clean_expected = ""
+    for char in solved_solution {
+        if char != ' ' && char != '\n' && char != '|' && char != '-' && char != '+' {
+            clean_expected = clean_expected + char.to_string()
+        }
+    }
+    inspect(clean_solution, content=clean_expected)
+}
+
+// (e) 无效输入字符串
+let invalid_length_grid = "123" // Too short
+test "Invalid Input Length" {
+    let solution = solve(invalid_length_grid)
+    inspect(solution, content="Error: Initial grid is invalid or has a contradiction.")
+}
+
+let invalid_char_grid = "12345678912345678912345678912345678912345678912345678912345678912345678912345678X" // 'X' is invalid
+test "Invalid Input Character" {
+    let solution = solve(invalid_char_grid)
+    inspect(solution, content="Error: Initial grid is invalid or has a contradiction.")
+}
+
 fn main {
-  println(solve(grid1))
+  let grid_to_solve = grid1
+  println("Solving Sudoku Puzzle:")
+  println(grid_to_solve)
+
+  let solution = solve(grid_to_solve)
+  println("\nSolution:")
+  println(solution)
 }
 
 
